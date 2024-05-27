@@ -1,0 +1,94 @@
+//controller to View int and string Data Passing
+//Model
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.Web.Models
+{
+    public class Student
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "test";
+        public string Standard { get; set; } = "test";
+        public int RollNo { get; set; }
+        public string City { get; set; } = "test";
+        public string State { get; set; } = "test";
+        public string Country { get; set; } = "test";
+    }
+}
+
+
+
+//Controller
+using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using TechnologyKeeda.Web.Models;
+
+namespace TechnologyKeeda.Web.Controllers
+{
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+
+        public HomeController(ILogger<HomeController> logger)
+        {
+            _logger = logger;
+        }
+
+        public IActionResult Index()
+        {
+            Student student = new Student();
+            student.Id = 101;
+            student.Name = "Sushil Kumar Thakur";
+            student.Standard = "Graduation";
+            student.RollNo = 202405056;
+            student.City = "Gopalganj";
+            student.State = "Bihar";
+            student.Country = "Bharat";
+            return View(student);
+            
+            
+            //int a = 100;
+            //string a = "Sushil";
+            //return View("index",a);
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+    }
+}
+
+
+//View
+@* @model int *@
+@* @model string *@
+@model Student
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<h1>Id: @Model.Id</h1>
+<h1>Name: @Model.Name</h1>
+<h1>Standard: @Model.Standard</h1>
+<h1>RollNo: @Model.RollNo</h1>
+<h1>City: @Model.City</h1>
+<h1>State: @Model.State</h1>
+<h1>Country: @Model.Country</h1>
+
+
+@* <h1>@Model</h1> *@
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
