@@ -1,0 +1,486 @@
+//Synchronous & Asynchronous
+
+1.Repository.
+=> Interfaces + Implementations + Controller
+//Interfaces
+------------
+//ICountryRepo.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Entities;
+
+namespace TechnologyKeeda.Repositories.Interfaces
+{
+    public interface ICountryRepo
+    {
+        Task<IEnumerable<Country>> GetAll();
+        Task<Country> GetById(int id);
+        Task Save(Country country);
+        Task Edit(Country country);
+        Task RemoveData(Country country);
+
+    }
+}
+
+
+//IStateRepo.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Entities;
+
+namespace TechnologyKeeda.Repositories.Interfaces
+{
+    public interface IStateRepo
+    {
+        Task<IEnumerable<State>> GetAll();
+        Task<State> GetById(int id);
+        Task Edit(State state);
+        Task RemoveData(State state);
+        Task Save(State state);
+    }
+}
+
+//ICityRepo.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Entities;
+
+namespace TechnologyKeeda.Repositories.Interfaces
+{
+    public interface ICityRepo
+    {
+        Task<IEnumerable<City>> GetAll();
+        Task<City> GetById(int id);
+        Task Save(City city);
+        Task Edit(City city);
+        Task RemoveData(City city);
+    }
+}
+
+///Implementations
+-------------------
+//CountryRepo.cs
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+
+namespace TechnologyKeeda.Repositories.Implementations
+{
+    public class CountryRepo : ICountryRepo
+    {
+        private readonly ApplicationDbContext _context;
+
+        public CountryRepo(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task Edit(Country country)
+        {
+            _context.countries.Update(country);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<Country>> GetAll()
+        {
+            var country = await _context.countries.ToListAsync();
+            return country;
+        }
+
+        public async Task<Country> GetById(int id)
+        {
+            var country = await _context.countries.FindAsync(id);
+            return country;
+        }
+
+        public async Task RemoveData(Country country)
+        {
+            _context.countries.Remove(country);
+            await _context.SaveChangesAsync();
+
+        }
+
+        public async Task Save(Country country)
+        {
+            await _context.countries.AddAsync(country);
+            await _context.SaveChangesAsync();
+        }
+    }
+}
+
+//StateRepo.cs
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+
+namespace TechnologyKeeda.Repositories.Implementations
+{
+    public class StateRepo : IStateRepo 
+    {
+        private readonly ApplicationDbContext _context;
+
+        public StateRepo(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task Edit(State state)
+        {
+            _context.states.Update(state);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<State>> GetAll()
+        {
+            var state = await _context.states.Include(x=>x.Country).ToListAsync();
+            return state;
+        }
+
+        public async Task<State> GetById(int id)
+        {
+            var state = await _context.states.FindAsync(id);
+            return state;
+        }
+
+        public async Task RemoveData(State state)
+        {
+            _context.states.Remove(state);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task Save(State state)
+        {
+            await _context.states.AddAsync(state);
+            await _context.SaveChangesAsync();
+        }
+    }
+}
+
+//CityRepo.cs
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+
+namespace TechnologyKeeda.Repositories.Implementations
+{
+    public class CityRepo : ICityRepo
+    {
+        private readonly ApplicationDbContext _context;
+
+        public CityRepo(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task Edit(City city)
+        {
+            _context.cities.Update(city);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<City>> GetAll()
+        {
+            return  await _context.cities.Include(x=>x.State).ThenInclude(y => y.Country).ToListAsync();
+        }
+
+        public async Task<City> GetById(int id)
+        {
+            var City = await _context.cities.FindAsync(id);
+            return City;
+        }
+
+        public async Task RemoveData(City city)
+        {
+            _context.cities.Remove(city);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task Save(City city)
+        {
+            await_context.cities.AddAsync(city);
+            await_context.SaveChangesAsync();
+        }
+    }
+}
+
+////Controller
+----------------------------
+//CountriesController
+using Microsoft.AspNetCore.Mvc;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+using TechnologyKeeda.UI.ViewModels.CountryViewModels;
+
+namespace TechnologyKeeda.UI.Controllers
+{
+    public class CountriesController : Controller
+    {
+        private readonly ICountryRepo _countryRepo;
+
+        public CountriesController(ICountryRepo countryRepo)
+        {
+            _countryRepo = countryRepo;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            List<CountryViewModel> vm = new List<CountryViewModel>();
+
+            var countries = await _countryRepo.GetAll();
+            foreach(var country in countries)
+            {
+                vm.Add(new CountryViewModel { Id = country.Id, Name = country.Name });
+            }
+
+            return View(vm);
+        }
+
+        [HttpGet]
+        public IActionResult Create()
+        {
+            //Country country = new Country();
+            CreateCountryViewMode country = new CreateCountryViewMode();
+            return View(country);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateCountryViewMode vm)
+        {
+            var country = new Country
+            {
+                Name = vm.Name,
+            };
+            await _countryRepo.Save(country);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var country = await _countryRepo.GetById(id);
+            CreateCountryViewMode vm = new CreateCountryViewMode
+            {
+                Id = country.Id,
+                Name = country.Name
+            };
+            return View(vm);
+        }
+        [HttpPost]
+        public async Task<IActionResult> Edit(CreateCountryViewMode vm)
+        {
+            var country = new Country
+            {
+                Id = vm.Id,
+                Name = vm.Name
+            };
+            await _countryRepo.Edit(country);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var Country = await _countryRepo.GetById(id);
+            await _countryRepo.RemoveData(Country);
+            return RedirectToAction("Index");
+        }
+
+    }
+}
+
+
+////StatesController
+--------------------
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+using TechnologyKeeda.UI.ViewModels.StateViewModels;
+
+namespace TechnologyKeeda.UI.Controllers
+{
+    public class StatesController : Controller
+    {
+        //ViewBag       //ViewData   //TempData
+        private readonly IStateRepo _stateRepo;
+        private readonly ICountryRepo _countryRepo;
+        public StatesController(IStateRepo stateRepo, ICountryRepo countryRepo)
+        {
+            _stateRepo = stateRepo;
+            _countryRepo = countryRepo;
+        }
+        public async Task<IActionResult> Index()
+        {
+            var States = await _stateRepo.GetAll();
+            var vm = new List<StateViewModel>();
+            foreach(var state in States)
+            {
+                vm.Add(new StateViewModel { Id = state.Id, StateName = state.Name, CountryName = state.Name });
+            }
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            var countries = await _countryRepo.GetAll();
+            ViewBag.Country = new SelectList(countries, "Id", "Name");
+            return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateStateViewModel vm)
+        {
+            var state = new State
+            {
+                Name = vm.StateName,
+                CountryId = vm.CountryId
+            };
+            await _stateRepo.Save(state);
+            return RedirectToAction("Index");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var state = await _stateRepo.GetById(id);
+            var vm = new EditStateViewModel
+            {
+                Id = state.Id,
+                StateName = state.Name,
+                CountryId = state.CountryId
+            };
+            var countries = await _countryRepo.GetAll();
+            ViewBag.Country = new SelectList(countries, "Id", "Name");
+            return View(vm);
+        }
+        [HttpPost]
+        public async Task<IActionResult> Edit(EditStateViewModel vm)
+        {
+            var state = new State
+            {
+                Id = vm.Id,
+                Name = vm.StateName,
+                CountryId = vm.CountryId
+            };
+            await _stateRepo.Edit(state);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var State = await _stateRepo.GetById(id);
+            await _stateRepo.RemoveData(State);
+            return RedirectToAction("Index");
+        }
+    }
+}
+
+////CitiesController
+---------------------
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Implementations;
+using TechnologyKeeda.Repositories.Interfaces;
+using TechnologyKeeda.UI.ViewModels.CityViewModels;
+
+namespace TechnologyKeeda.UI.Controllers
+{
+    public class CitiesController : Controller
+    {
+        private readonly IStateRepo _stateRepo;
+        private readonly ICityRepo _cityRepo;
+
+        public CitiesController(IStateRepo stateRepo, ICityRepo cityRepo)
+        {
+            _stateRepo = stateRepo;
+            _cityRepo = cityRepo;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var cities = await _cityRepo.GetAll();
+            var vm = new List<CityViewModel>();
+            foreach(var city in cities)
+            {
+                vm.Add(new CityViewModel { Id = city.Id, CityName = city.Name, StateName = city.State.Name, CountryName = city.State.Country.Name });
+            }
+            return View(vm);
+        }
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            var states = await _stateRepo.GetAll();
+            ViewBag.StateList = new SelectList(states, "Id", "Name");
+            return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateCityViewModel vm)
+        {
+            var city = new City
+            {
+                Name = vm.CityName,
+                StateId = vm.StateId
+            };
+            await _cityRepo.Save(city);
+            return RedirectToAction("Index");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var City = await _cityRepo.GetById(id);
+            var states = await _stateRepo.GetAll();
+            ViewBag.StateList = new SelectList(states, "Id", "Name");
+            var vm = new EditCityViewModel
+            {
+                Id = City.Id,
+                CityName = City.Name,
+                StateId= City.StateId
+            };
+            return View(vm);
+        }
+        [HttpPost]
+        public async Task<IActionResult> Edit(EditCityViewModel vm)
+        {
+            var city = new City
+            {
+                Id = vm.Id,
+                Name = vm.CityName,
+                StateId = vm.StateId
+            };
+            await _cityRepo.Edit(city);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var City = await _cityRepo.GetById(id);
+            await _cityRepo.RemoveData(City);
+            return RedirectToAction("Index");
+        }
+    }
+}
+
