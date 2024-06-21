@@ -1,0 +1,827 @@
+//Controller:- Country,State,City
+1.Country
+=> Seprate View Model Folder
+//CountryViewModel
+//CreateCountryViewModel.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.UI.ViewModels.CountryViewModels
+{
+    public class CreateCountryViewMode
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+}
+
+//CountryViewModel
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.UI.ViewModels.CountryViewModels
+{
+    public class CountryViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+
+    }
+}
+----------------------------------------
+//Views
+//All Select(Index)
+@model IEnumerable<CountryViewModel>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Country List</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-info">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
+                    @Html.ActionLink("Details", "Details", new { id = item.Id }) |
+                    @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+//Create
+@model CreateCountryViewMode
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create Country</h1>
+
+<h4>Country</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @* <div class="form-group">
+                <label asp-for="Id" class="control-label"></label>
+                <input asp-for="Id" class="form-control" />
+                <span asp-validation-for="Id" class="text-danger"></span>
+            </div> *@
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+//Edit
+@model Country
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit Country</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <input asp-for="Id" class="form-control" />
+                <span asp-validation-for="Id" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+----------------------------------------
+using Microsoft.AspNetCore.Mvc;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+using TechnologyKeeda.UI.ViewModels.CountryViewModels;
+
+namespace TechnologyKeeda.UI.Controllers
+{
+    public class CountriesController : Controller
+    {
+        private readonly ICountryRepo _countryRepo;
+
+        public CountriesController(ICountryRepo countryRepo)
+        {
+            _countryRepo = countryRepo;
+        }
+
+        public IActionResult Index()
+        {
+            List<CountryViewModel> vm = new List<CountryViewModel>();
+
+            var countries = _countryRepo.GetAll();
+            foreach(var country in countries)
+            {
+                vm.Add(new CountryViewModel { Id = country.Id, Name = country.Name });
+            }
+
+            return View(vm);
+        }
+
+        [HttpGet]
+        public IActionResult Create()
+        {
+            //Country country = new Country();
+            CreateCountryViewMode country = new CreateCountryViewMode();
+            return View(country);
+        }
+
+        [HttpPost]
+        public IActionResult Create(CreateCountryViewMode vm)
+        {
+            var country = new Country
+            {
+                Name = vm.Name,
+            };
+            _countryRepo.Save(country);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public IActionResult Edit(int id)
+        {
+            var country = _countryRepo.GetById(id);
+            CreateCountryViewMode vm = new CreateCountryViewMode
+            {
+                Id = country.Id,
+                Name = country.Name
+            };
+            return View(vm);
+        }
+        [HttpPost]
+        public IActionResult Edit(CreateCountryViewMode vm)
+        {
+            var country = new Country
+            {
+                Id = vm.Id,
+                Name = vm.Name
+            };
+            _countryRepo.Edit(country);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public IActionResult Delete(int id)
+        {
+            var Country = _countryRepo.GetById(id);
+            _countryRepo.RemoveData(Country);
+            return RedirectToAction("Index");
+        }
+
+    }
+}
+
+--------------------------------------------------
+//Seprate View Model Folder(StateViewModel)
+//CreateStateViewModel.cs
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.UI.ViewModels.StateViewModels
+{
+    public class CreateStateViewModel
+    {
+        public string StateName { get; set; }
+        [Display(Name = "Country Name")]
+        public int CountryId { get; set; }
+    }
+}
+
+//StateViewModel.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.UI.ViewModels.StateViewModels
+{
+    public class StateViewModel
+    {
+        public int Id { get; set; }
+        public string StateName { get; set; }
+        public string CountryName { get; set; }
+    }
+}
+
+//EditStateViewModel.cs
+namespace TechnologyKeeda.UI.ViewModels.StateViewModels
+{
+    public class EditStateViewModel
+    {
+        public int Id { get; set; }
+        public string StateName { get; set; }
+        public int CountryId { get; set; }
+    }
+}
+
+-----------------------------------------------------
+
+2.State(Controller)
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+using TechnologyKeeda.UI.ViewModels.StateViewModels;
+
+namespace TechnologyKeeda.UI.Controllers
+{
+    public class StatesController : Controller
+    {
+        //ViewBag       //ViewData   //TempData
+        private readonly IStateRepo _stateRepo;
+        private readonly ICountryRepo _countryRepo;
+        public StatesController(IStateRepo stateRepo, ICountryRepo countryRepo)
+        {
+            _stateRepo = stateRepo;
+            _countryRepo = countryRepo;
+        }
+        public IActionResult Index()
+        {
+            var States = _stateRepo.GetAll();
+            var vm = new List<StateViewModel>();
+            foreach(var state in States)
+            {
+                vm.Add(new StateViewModel { Id = state.Id, StateName = state.Name, CountryName = state.Name });
+            }
+            return View(vm);
+        }
+
+        [HttpGet]
+        public IActionResult Create()
+        {
+            var countries = _countryRepo.GetAll();
+            ViewBag.Country = new SelectList(countries, "Id", "Name");
+            return View();
+        }
+        [HttpPost]
+        public IActionResult Create(CreateStateViewModel vm)
+        {
+            var state = new State
+            {
+                Name = vm.StateName,
+                CountryId = vm.CountryId
+            };
+            _stateRepo.Save(state);
+            return RedirectToAction("Index");
+        }
+
+        [HttpGet]
+        public IActionResult Edit(int id)
+        {
+            var state = _stateRepo.GetById(id);
+            var vm = new EditStateViewModel
+            {
+                Id = state.Id,
+                StateName = state.Name,
+                CountryId = state.CountryId
+            };
+            var countries = _countryRepo.GetAll();
+            ViewBag.Country = new SelectList(countries, "Id", "Name");
+            return View(vm);
+        }
+        [HttpPost]
+        public IActionResult Edit(EditStateViewModel vm)
+        {
+            var state = new State
+            {
+                Id = vm.Id,
+                Name = vm.StateName,
+                CountryId = vm.CountryId
+            };
+            _stateRepo.Edit(state);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public IActionResult Delete(int id)
+        {
+            var State = _stateRepo.GetById(id);
+            _stateRepo.RemoveData(State);
+            return RedirectToAction("Index");
+        }
+    }
+}
+-------------------------------------------------
+//State Views
+//Index View
+-------------
+@model IEnumerable<StateViewModel>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>State List</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-info">Create State</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.StateName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CountryName)
+            </th>
+            <th>
+                Country Name
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.StateName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CountryName)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
+                @Html.ActionLink("Details", "Details", new { id=item.Id }) |
+                @Html.ActionLink("Delete", "Delete", new { id=item.Id })
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+//Create View
+-------------
+@model CreateStateViewModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create State</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @* <div class="form-group">
+                <label asp-for="Id" class="control-label"></label>
+                <input asp-for="Id" class="form-control" />
+                <span asp-validation-for="Id" class="text-danger"></span>
+            </div> *@
+            <div class="form-group">
+                <label asp-for="StateName" class="control-label"></label>
+                <input asp-for="StateName" class="form-control" />
+                <span asp-validation-for="StateName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CountryId" class="control-label"></label>
+                <select asp-for="CountryId" asp-items="@ViewBag.Country" class="form-control">
+                    <option selected disabled>Choose Country</option>
+                </select>
+
+                <span asp-validation-for="CountryId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+//Edit View
+------------
+@model EditStateViewModel
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit State</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <input type="hidden" asp-for="Id" class="form-control" />
+                <span asp-validation-for="Id" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="StateName" class="control-label"></label>
+                <input asp-for="StateName" class="form-control" />
+                <span asp-validation-for="StateName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CountryId" class="control-label"></label>
+                <select asp-for="CountryId" asp-items="@ViewBag.Country" class="form-control" >
+                    <option selected disabled>Choose Country</option>
+                </select>
+                <span asp-validation-for="CountryId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+---------------------------------------------------------------------------
+//SeprateViewModel Folder
+//CityViewModel.cs
+------------------
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.UI.ViewModels.CityViewModels
+{
+    public class CityViewModel
+    {
+        public int Id { get; set; }
+        public string CityName { get; set; }
+        public string StateName { get; set; }
+        public string CountryName { get; set; }
+    }
+}
+
+//CreateCityViewModel.cs
+------------------------
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.UI.ViewModels.CityViewModels
+{
+    public class CreateCityViewModel
+    {
+        public string CityName { get; set; }
+        [Display(Name = "StateName")]
+        public int StateId { get; set; }
+    }
+}
+
+//EditCityViewModel.cs
+----------------------
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.UI.ViewModels.CityViewModels
+{
+    public class EditCityViewModel
+    {
+        public int Id { get; set; }
+        public string CityName { get; set; }
+        [Display(Name = "StateName")]
+        public int StateId { get; set; }
+    }
+}
+
+3.City(Controller)
+-----------------
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Implementations;
+using TechnologyKeeda.Repositories.Interfaces;
+using TechnologyKeeda.UI.ViewModels.CityViewModels;
+
+namespace TechnologyKeeda.UI.Controllers
+{
+    public class CitiesController : Controller
+    {
+        private readonly IStateRepo _stateRepo;
+        private readonly ICityRepo _cityRepo;
+
+        public CitiesController(IStateRepo stateRepo, ICityRepo cityRepo)
+        {
+            _stateRepo = stateRepo;
+            _cityRepo = cityRepo;
+        }
+
+        public IActionResult Index()
+        {
+            var cities = _cityRepo.GetAll();
+            var vm = new List<CityViewModel>();
+            foreach(var city in cities)
+            {
+                vm.Add(new CityViewModel { Id = city.Id, CityName = city.Name, StateName = city.State.Name, CountryName = city.State.Country.Name });
+            }
+            return View(vm);
+        }
+        [HttpGet]
+        public IActionResult Create()
+        {
+            var states = _stateRepo.GetAll();
+            ViewBag.StateList = new SelectList(states, "Id", "Name");
+            return View();
+        }
+        [HttpPost]
+        public IActionResult Create(CreateCityViewModel vm)
+        {
+            var city = new City
+            {
+                Name = vm.CityName,
+                StateId = vm.StateId
+            };
+            _cityRepo.Save(city);
+            return RedirectToAction("Index");
+        }
+
+        [HttpGet]
+        public IActionResult Edit(int id)
+        {
+            var City = _cityRepo.GetById(id);
+            var states = _stateRepo.GetAll();
+            ViewBag.StateList = new SelectList(states, "Id", "Name");
+            var vm = new EditCityViewModel
+            {
+                Id = City.Id,
+                CityName = City.Name,
+                StateId= City.StateId
+            };
+            return View(vm);
+        }
+        [HttpPost]
+        public IActionResult Edit(EditCityViewModel vm)
+        {
+            var city = new City
+            {
+                Id = vm.Id,
+                Name = vm.CityName,
+                StateId = vm.StateId
+            };
+            _cityRepo.Edit(city);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public IActionResult Delete(int id)
+        {
+            var City = _cityRepo.GetById(id);
+            _cityRepo.RemoveData(City);
+            return RedirectToAction("Index");
+        }
+    }
+}
+
+//Views
+--------
+//Index.cshtml
+-------------
+@model IEnumerable<CityViewModel>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CityName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.StateName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CountryName)
+            </th>
+            <th>
+                Details
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Id)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.CityName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.StateName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.CountryName)
+                </td>
+                <td>
+                    @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
+                    @Html.ActionLink("Details", "Details", new { id = item.Id }) |
+                    @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+//Create.cshtml
+---------------
+@model CreateCityViewModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>City Create</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @* <div class="form-group">
+                <label asp-for="Id" class="control-label"></label>
+                <input asp-for="Id" class="form-control" />
+                <span asp-validation-for="Id" class="text-danger"></span>
+            </div> *@
+            <div class="form-group">
+                <label asp-for="CityName" class="control-label"></label>
+                <input asp-for="CityName" class="form-control" />
+                <span asp-validation-for="CityName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="StateId" class="control-label"></label>
+                <select asp-for="StateId" asp-items="@ViewBag.StateList" class="form-control">
+                    <option selected disabled>Choose State</option>
+                </select>
+
+                <span asp-validation-for="StateId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+//Edit.cshtml
+-------------
+@model EditCityViewModel 
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit City</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <input type="hidden" asp-for="Id" class="form-control" />
+                 <span asp-validation-for="Id" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CityName" class="control-label"></label>
+                <input asp-for="CityName" class="form-control" />
+                <span asp-validation-for="CityName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="StateId" class="control-label"></label>
+                <select asp-for="StateId" asp-items="@ViewBag.StateList" class="form-control">
+                    <option selected disabled>Choose State</option>
+                </select>
+                <span asp-validation-for="StateId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
