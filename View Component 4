@@ -1,0 +1,159 @@
+//Include Code in Program.cs File
+
+// Add services to the container.
+builder.Services.AddControllersWithViews();
+
+//Dependencies Add-------
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+options.UseSqlServer(builder.Configuration.GetConnectionString("dbcs"), b => b.MigrationsAssembly("TechnologyKeeda.UI")));
+
+//DI : Tightly Coupling---Convert---loosly Coupled
+//Class A { public A() { n
+//} }
+// DI :- Achieve IOC (Inversal of Control)
+builder.Services.AddScoped<ICountryRepo, CountryRepo>();
+builder.Services.AddScoped<IStateRepo, StateRepo>();
+builder.Services.AddScoped<ICityRepo, CityRepo>();
+
+
+//Seprate create 3 View Components Folder
+1.CountCityViewComponent.cs
+=>using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Repositories.Interfaces;
+
+namespace TechnologyKeeda.UI.ViewComponents
+{
+    public class CountCityViewComponent : ViewComponent
+    {
+        private ICityRepo _cityRepo;
+
+        public CountCityViewComponent(ICityRepo cityRepo)
+        {
+            _cityRepo = cityRepo;
+        }
+
+        public async Task<IViewComponentResult> InvokeAsync()
+        {
+            var cities = await _cityRepo.GetAll();
+            int TotalCities = cities.Count();
+            return View(TotalCities);
+        }
+    }
+}
+
+2.CountCountryViewComponent.cs
+=>using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Repositories.Interfaces;
+
+namespace TechnologyKeeda.UI.ViewComponents
+{
+    public class CountCountryViewComponent : ViewComponent
+    {
+        private readonly ICountryRepo _countryRepo;
+
+        public CountCountryViewComponent(ICountryRepo countryRepo)
+        {
+            _countryRepo = countryRepo;
+        }
+
+        public async Task<IViewComponentResult> InvokeAsync()
+        {
+            var country = await _countryRepo.GetAll();
+            int TotalCountry = country.Count();
+            return View(TotalCountry);
+        }
+    }
+}
+
+3.CountStateViewComponent.cs
+=>using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Repositories.Interfaces;
+
+namespace TechnologyKeeda.UI.ViewComponents
+{
+    public class CountStateViewComponent : ViewComponent
+    {
+        private readonly IStateRepo _stateRepo;
+
+        public CountStateViewComponent(IStateRepo stateRepo)
+        {
+            _stateRepo = stateRepo;
+        }
+
+        
+
+        public async Task<IViewComponentResult> InvokeAsync()
+        {
+            var states = await _stateRepo.GetAll();
+            int TotalStates = states.Count();
+            return View(TotalStates);
+        }
+    }
+}
+
+//Create Seprate Views -> Shared folder ke ander seprate components folder -> components folder ke ander create 3 seprate folder country,State,City
+1.CountCountry Folder ->Default.cshtml (View create)
+=>
+@model int
+
+<h2>Total Contries : </h2>
+<h2 class="d-flex justify-content-center align-items-center">@Model</h2>
+
+2.CountState Folder ->Default.cshtml (View create)
+=>
+@model int
+
+<h2>Total States : </h2>
+<h2 class="d-flex justify-content-center align-items-center">@Model</h2>
+
+3.CountCity Folder ->Default.cshtml (View create)
+=>
+@model int
+
+<h2>Total Cities : </h2>
+<h2 class="d-flex justify-content-center align-items-center">@Model</h2>
+
+//Home Controller ke Index View Dispaly data
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@* <div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div> *@
+
+<div class="row">
+    <div class="col-4">
+        <div style="width:220px; height:120px; background-color:navy;color:white;">
+            @await Component.InvokeAsync("CountCity")
+        </div>
+    </div>
+    <div class="col-4">
+        <div style="width:240px; height:120px; background-color:navy;color:white;">
+            @await Component.InvokeAsync("CountCountry")
+        </div>
+    </div>
+    <div class="col-4">
+        <div style="width:240px; height:120px; background-color:navy;color:white;">
+            @await Component.InvokeAsync("CountState")
+        </div>
+    </div>
+</div>
+
+
