@@ -1,0 +1,330 @@
+//Session :- Register, Login, Logout
+Session:-Session is state management object.
+  ->Session key value pair me data ko store karta hai
+
+1.Create Entites.
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.Entities
+{
+    public class UserInfo
+    {
+        [Key]
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string Password { get; set; }
+    }
+}
+
+2.Create Interface
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Entities;
+
+namespace TechnologyKeeda.Repositories.Interfaces
+{
+    public interface IUserRepo
+    {
+        Task RegisterUser(UserInfo userInfo);
+        Task<UserInfo> GetUserInfo(string username, string password);
+    }
+}
+
+3.Creaet Implementation
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+
+namespace TechnologyKeeda.Repositories.Implementations
+{
+    public class UserRepo : IUserRepo
+    {
+        private readonly ApplicationDbContext _context;
+
+        public UserRepo(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<UserInfo> GetUserInfo(string username, string password)
+        {
+            var user = await _context.UserInfos.FirstOrDefaultAsync(x => x.UserName.ToLower() == username.ToLower() && x.Password == password);
+            return user;
+        }
+
+        public async Task RegisterUser(UserInfo userInfo)
+        {
+            if (!Exists(userInfo.UserName))
+            {
+                await _context.UserInfos.AddAsync(userInfo);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        private bool Exists(string username)
+        { 
+            return _context.UserInfos.Any(x=>x.UserName.ToLower() == username.ToLower());
+        }
+
+    }
+}
+
+4.Create Database table and DbContext
+public DbSet<UserInfo> UserInfos { get; set; }
+
+=>Add-Migration 'AddTable'
+=>Update-Database
+
+5.Add Scoped in Program.cs file
+
+builder.Services.AddScoped<IUserRepo, UserRepo>();
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+6.Create Controller
+
+using Microsoft.AspNetCore.Mvc;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+using TechnologyKeeda.UI.ViewModels.UserInfoViewModels;
+
+namespace TechnologyKeeda.UI.Controllers
+{
+    public class AuthController : Controller
+    {
+        private readonly IUserRepo _userRepo;
+
+        public AuthController(IUserRepo userRepo)
+        {
+            _userRepo = userRepo;
+        }
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            return View();
+        }
+        
+
+        [HttpPost]
+        public async Task<IActionResult> Register(UserInfoViewModel vm)
+        {
+            var model = new UserInfo
+            {
+                UserName = vm.UserName,
+                Password = vm.Password,
+            };
+            await _userRepo.RegisterUser(model);
+            return RedirectToAction("Login");
+        }
+
+        [HttpGet]
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(UserInfoViewModel vm)
+        {
+            var userInfo = await _userRepo.GetUserInfo(vm.UserName, vm.Password);
+            HttpContext.Session.SetInt32("userId", userInfo.UserId);
+            HttpContext.Session.SetString("userName", userInfo.UserName);
+            return RedirectToAction("Index", "Countries");
+        }
+
+        [HttpGet]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login");
+        }
+
+    }
+}
+
+7.Create View Model -> Create Seprate FolderName(UserInfoViewModels)
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TechnologyKeeda.UI.ViewModels.UserInfoViewModels
+{
+    public class UserInfoViewModel
+    {
+        public int Id { get; set; }
+        public string UserName { get; set; }
+        public string Password { get; set; }
+    }
+}
+
+=>Register View
+@model TechnologyKeeda.UI.ViewModels.UserInfoViewModels.UserInfoViewModel
+
+<h4>Register</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Register">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @* <div class="form-group">
+                <label asp-for="Id" class="control-label"></label>
+                <input asp-for="Id" class="form-control" />
+                <span asp-validation-for="Id" class="text-danger"></span>
+            </div> *@
+            <div class="form-group">
+                <label asp-for="UserName" class="control-label"></label>
+                <input asp-for="UserName" class="form-control" />
+                <span asp-validation-for="UserName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Password" class="control-label"></label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Login">Login</a>
+</div>
+
+=>Login View
+@model TechnologyKeeda.UI.ViewModels.UserInfoViewModels.UserInfoViewModel
+
+<h4>Login</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Login">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @* <div class="form-group">
+                <label asp-for="Id" class="control-label"></label>
+                <input asp-for="Id" class="form-control" />
+                <span asp-validation-for="Id" class="text-danger"></span>
+            </div> *@
+            <div class="form-group">
+                <label asp-for="UserName" class="control-label"></label>
+                <input asp-for="UserName" class="form-control" />
+                <span asp-validation-for="UserName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Password" class="control-label"></label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Login" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Register">Register</a>
+</div>
+
+
+//Dusre Controller me Implementation Session
+using Microsoft.AspNetCore.Mvc;
+using TechnologyKeeda.Entities;
+using TechnologyKeeda.Repositories.Interfaces;
+using TechnologyKeeda.UI.ViewModels.CountryViewModels;
+
+namespace TechnologyKeeda.UI.Controllers
+{
+    public class CountriesController : Controller
+    {
+        private readonly ICountryRepo _countryRepo;
+
+        public CountriesController(ICountryRepo countryRepo)
+        {
+            _countryRepo = countryRepo;
+        }
+
+        public async Task<IActionResult> Index()                                    //Use Session Single Method  Chahe to sare method par use kar sakte hai.
+        {
+            if (HttpContext.Session.GetInt32("userId") != null)
+            {
+                List<CountryViewModel> vm = new List<CountryViewModel>();
+
+                var countries = await _countryRepo.GetAll();
+                foreach (var country in countries)
+                {
+                    vm.Add(new CountryViewModel { Id = country.Id, Name = country.Name });
+                }
+                return View(vm);
+            }
+            return RedirectToAction("Login" , "Auth");
+
+        }
+
+        [HttpGet]
+        public IActionResult Create()
+        {
+            //Country country = new Country();
+            CreateCountryViewMode country = new CreateCountryViewMode();
+            return View(country);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateCountryViewMode vm)
+        {
+            var country = new Country
+            {
+                Name = vm.Name,
+            };
+            await _countryRepo.Save(country);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var country = await _countryRepo.GetById(id);
+            CreateCountryViewMode vm = new CreateCountryViewMode
+            {
+                Id = country.Id,
+                Name = country.Name
+            };
+            return View(vm);
+        }
+        [HttpPost]
+        public async Task<IActionResult> Edit(CreateCountryViewMode vm)
+        {
+            var country = new Country
+            {
+                Id = vm.Id,
+                Name = vm.Name
+            };
+            await _countryRepo.Edit(country);
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var Country = await _countryRepo.GetById(id);
+            await _countryRepo.RemoveData(Country);
+            return RedirectToAction("Index");
+        }
+
+    }
+}
